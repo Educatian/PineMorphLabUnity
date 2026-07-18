@@ -1,0 +1,6 @@
+{
+  "name": "AdieLab.PineMorphLab.Editor",
+  "rootNamespace": "AdieLab.PineMorphLab.Editor",
+  "references": ["AdieLab.PineMorphLab"],
+  "includePlatforms": ["Editor"]
+}

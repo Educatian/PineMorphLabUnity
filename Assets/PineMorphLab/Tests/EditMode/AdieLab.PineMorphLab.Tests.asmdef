@@ -1,0 +1,7 @@
+{
+  "name": "AdieLab.PineMorphLab.Tests",
+  "rootNamespace": "AdieLab.PineMorphLab.Tests",
+  "references": ["AdieLab.PineMorphLab"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "includePlatforms": ["Editor"]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "AdieLab.PineMorphLab",
+  "rootNamespace": "AdieLab.PineMorphLab",
+  "references": ["Unity.InputSystem", "Unity.ugui"]
+}
