@@ -16,10 +16,11 @@ namespace AdieLab.PineMorphLab
     {
         private static readonly Color Ink = new Color(0.035f, 0.075f, 0.075f, 0.98f);
         private static readonly Color Panel = new Color(0.94f, 0.955f, 0.945f, 0.99f);
-        private static readonly Color Teal = new Color(0.08f, 0.54f, 0.51f, 1f);
-        private static readonly Color Amber = new Color(0.95f, 0.57f, 0.16f, 1f);
-        private static readonly Color Coral = new Color(0.88f, 0.27f, 0.24f, 1f);
-        private static readonly Color Muted = new Color(0.34f, 0.41f, 0.40f, 1f);
+        private static readonly Color Teal = new Color(0.00f, 0.44f, 0.40f, 1f);
+        private static readonly Color Amber = new Color(0.60f, 0.30f, 0.00f, 1f);
+        private static readonly Color Coral = new Color(0.71f, 0.14f, 0.09f, 1f);
+        private static readonly Color CoralBright = new Color(0.98f, 0.38f, 0.34f, 1f);
+        private static readonly Color Muted = new Color(0.22f, 0.30f, 0.29f, 1f);
         private static readonly Color ActiveLayer = new Color(0.18f, 0.63f, 0.47f, 1f);
         private static readonly Color PassiveLayer = new Color(0.74f, 0.39f, 0.19f, 1f);
 
@@ -33,6 +34,20 @@ namespace AdieLab.PineMorphLab
             public const float RightWidth = 426f;
             public const float WorkspaceTop = 80f;
             public const float ResultsTop = 632f;
+        }
+
+        private static class UiType
+        {
+            public const int Section = 18;
+            public const int Body = 17;
+            public const int Control = 15;
+            public const int Value = 16;
+            public const int Meta = 13;
+            public const int Stage = 18;
+            public const int Viewport = 14;
+            public const int MetricLabel = 12;
+            public const int MetricValue = 20;
+            public const int Chart = 14;
         }
 
         private readonly List<PineMorphInput> testedInputs = new List<PineMorphInput>();
@@ -75,6 +90,7 @@ namespace AdieLab.PineMorphLab
         private int assessmentPoints;
         private bool running;
         private bool applyingPreset;
+        private bool compactLayout;
 
         public int CurrentTrial => trialIndex;
         public int CompletedTrialCount => testedResults.Count;
@@ -132,6 +148,7 @@ namespace AdieLab.PineMorphLab
 
         private void Awake()
         {
+            compactLayout = ShouldUseCompactLayout();
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             CreateWorld();
             CreateInterface();
@@ -251,14 +268,16 @@ namespace AdieLab.PineMorphLab
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1600f, 900f);
+            scaler.referenceResolution = compactLayout
+                ? new Vector2(1280f, 720f)
+                : new Vector2(1600f, 900f);
             scaler.matchWidthOrHeight = 0.5f;
 
             RectTransform root = canvasObject.GetComponent<RectTransform>();
             Image header = CreatePanel(root, "Header", 0f, 0f, 1600f, 64f, Ink);
             CreateText(header.rectTransform, "PineMorph Lab", 26, FontStyle.Bold, Color.white,
                 26f, 12f, 280f, 38f, TextAnchor.MiddleLeft);
-            CreateText(header.rectTransform, "HYGROMORPHIC BILAYER DESIGN STUDIO", 14,
+            CreateText(header.rectTransform, "HYGROMORPHIC BILAYER DESIGN STUDIO", 16,
                 FontStyle.Bold, new Color(0.66f, 0.86f, 0.82f), 304f, 16f, 430f, 32f,
                 TextAnchor.MiddleLeft);
             Button help = CreateButton(header.rectTransform, "?", Teal, 1538f, 11f, 40f, 40f);
@@ -266,10 +285,10 @@ namespace AdieLab.PineMorphLab
 
             Image left = CreatePanel(root, "Design Controls", UiLayout.LeftX, UiLayout.WorkspaceTop,
                 UiLayout.LeftWidth, 800f, Panel);
-            CreateText(left.rectTransform, "DESIGN INPUTS", 15, FontStyle.Bold, Teal,
+            CreateText(left.rectTransform, "DESIGN INPUTS", UiType.Section, FontStyle.Bold, Teal,
                 18f, 16f, 314f, 28f, TextAnchor.MiddleLeft);
             CreateText(left.rectTransform,
-                "Tune the bonded layers before committing a prediction.", 15, FontStyle.Normal,
+                "Tune the bonded layers before committing a prediction.", UiType.Body, FontStyle.Normal,
                 Muted, 18f, 46f, 314f, 44f, TextAnchor.UpperLeft);
 
             thicknessSlider = CreateSlider(left.rectTransform, "Active Layer Fraction", 18f, 102f, 314f,
@@ -282,7 +301,7 @@ namespace AdieLab.PineMorphLab
             stiffnessSlider.onValueChanged.AddListener(_ => OnDesignChanged());
             fiberSlider.onValueChanged.AddListener(_ => OnDesignChanged());
 
-            CreateText(left.rectTransform, "PREDICT THE LIMITING OUTCOME", 13, FontStyle.Bold,
+            CreateText(left.rectTransform, "PREDICT THE LIMITING OUTCOME", UiType.Control, FontStyle.Bold,
                 Muted, 18f, 368f, 314f, 24f, TextAnchor.MiddleLeft);
             predictionButtons = new Button[PredictionLabels.Length];
             for (int i = 0; i < PredictionLabels.Length; i++)
@@ -292,7 +311,7 @@ namespace AdieLab.PineMorphLab
                 float y = 402f + (i / 2) * 46f;
                 float width = i == 4 ? 314f : 152f;
                 predictionButtons[i] = CreateButton(left.rectTransform, PredictionLabels[i],
-                    new Color(0.35f, 0.41f, 0.40f), x, y, width, 38f, 12);
+                    new Color(0.35f, 0.41f, 0.40f), x, y, width, 38f, 14);
                 predictionButtons[i].onClick.AddListener(() => SelectPrediction(captured));
             }
 
@@ -304,54 +323,78 @@ namespace AdieLab.PineMorphLab
             exportButton = CreateButton(left.rectTransform, "EXPORT CSV", Ink, 18f, 666f, 314f, 42f, 13);
             exportButton.onClick.AddListener(ExportCsv);
             exportButton.interactable = false;
-            CreateText(left.rectTransform, "MODEL 1.0  |  HUMIDITY STEP 55% RH", 11, FontStyle.Bold,
+            CreateText(left.rectTransform, "MODEL 1.0  |  HUMIDITY STEP 55% RH", UiType.Meta, FontStyle.Bold,
                 Muted, 18f, 734f, 314f, 24f, TextAnchor.MiddleLeft);
 
             Image stage = CreatePanel(root, "Learning Stage", UiLayout.CenterX, UiLayout.WorkspaceTop,
                 UiLayout.CenterWidth, 72f,
                 new Color(0.03f, 0.11f, 0.12f, 0.94f));
-            stageText = CreateText(stage.rectTransform, string.Empty, 16, FontStyle.Bold, Color.white,
+            stageText = CreateText(stage.rectTransform, string.Empty, UiType.Stage, FontStyle.Bold, Color.white,
                 20f, 10f, 710f, 52f, TextAnchor.MiddleLeft);
 
             Image viewportLabel = CreatePanel(root, "Viewport Label", UiLayout.CenterX, 162f,
                 UiLayout.CenterWidth, 38f,
                 new Color(0.035f, 0.075f, 0.075f, 0.82f));
             CreateText(viewportLabel.rectTransform, "3D BILAYER  |  DRAG TO ROTATE  |  WHEEL TO ZOOM  |  R TO RESET",
-                12, FontStyle.Bold, new Color(0.80f, 0.90f, 0.88f), 16f, 4f, 718f, 30f,
+                UiType.Viewport, FontStyle.Bold, new Color(0.80f, 0.90f, 0.88f), 16f, 4f, 718f, 30f,
                 TextAnchor.MiddleLeft);
 
             Image right = CreatePanel(root, "Evidence Dashboard", UiLayout.RightX,
                 UiLayout.WorkspaceTop, UiLayout.RightWidth, 536f,
                 new Color(0.96f, 0.97f, 0.95f, 0.98f));
-            CreateText(right.rectTransform, "MECHANICS EVIDENCE", 15, FontStyle.Bold, Teal,
+            CreateText(right.rectTransform, "MECHANICS EVIDENCE", UiType.Section, FontStyle.Bold, Teal,
                 18f, 14f, 390f, 28f, TextAnchor.MiddleLeft);
             angleValue = CreateMetric(right.rectTransform, "OPENING ANGLE", "--", 18f, 52f, 118f, Teal);
             responseValue = CreateMetric(right.rectTransform, "RESPONSE t95", "--", 146f, 52f, 118f, Amber);
             stressValue = CreateMetric(right.rectTransform, "PEAK STRESS", "--", 274f, 52f, 134f, Coral);
             traceText = CreateText(right.rectTransform,
                 "INPUTS\n  -> mismatch strain\n  -> force + moment balance\n  -> curvature + diffusion\n  -> three constraints",
-                14, FontStyle.Normal, new Color(0.15f, 0.23f, 0.23f), 18f, 154f, 390f, 118f,
+                UiType.Value, FontStyle.Normal, new Color(0.10f, 0.18f, 0.18f), 18f, 154f, 390f, 118f,
                 TextAnchor.UpperLeft);
-            CreateText(right.rectTransform, "NORMALIZED CONSTRAINT MAP", 11, FontStyle.Bold,
+            Text chartTitle = CreateText(right.rectTransform, "NORMALIZED CONSTRAINT MAP", UiType.Meta, FontStyle.Bold,
                 Muted, 18f, 264f, 390f, 20f, TextAnchor.MiddleLeft);
             chart = new GameObject("Trial Comparison Graph", typeof(RectTransform), typeof(CanvasRenderer),
                 typeof(PineMorphChart)).GetComponent<PineMorphChart>();
             chart.transform.SetParent(right.transform, false);
             SetRect(chart.rectTransform, 18f, 286f, 390f, 170f);
-            for (int i = 0; i < 5; i++)
+            Text[] trialAxisLabels = new Text[5];
+            for (int i = 0; i < trialAxisLabels.Length; i++)
             {
-                CreateText(right.rectTransform, $"T{i + 1}", 10, FontStyle.Bold, Muted,
+                trialAxisLabels[i] = CreateText(right.rectTransform, $"T{i + 1}", UiType.Chart, FontStyle.Bold, Muted,
                     29f + 85f * i, 458f, 30f, 18f, TextAnchor.MiddleCenter);
             }
-            CreateText(right.rectTransform, "ANGLE 0-120 deg", 10, FontStyle.Bold,
+            Text angleRange = CreateText(right.rectTransform, "ANGLE 0-120deg", UiType.Chart, FontStyle.Bold,
                 Teal, 18f, 478f, 118f, 20f, TextAnchor.MiddleLeft);
-            CreateText(right.rectTransform, "RESPONSE 0-320 s", 10, FontStyle.Bold,
+            Text timeRange = CreateText(right.rectTransform, "TIME 0-320s", UiType.Chart, FontStyle.Bold,
                 Amber, 146f, 478f, 118f, 20f, TextAnchor.MiddleLeft);
-            CreateText(right.rectTransform, "STRESS 0-8 MPa", 10, FontStyle.Bold,
+            Text stressRange = CreateText(right.rectTransform, "STRESS 0-8MPa", UiType.Chart, FontStyle.Bold,
                 Coral, 274f, 478f, 134f, 20f, TextAnchor.MiddleLeft);
-            CreateText(right.rectTransform,
-                "Constraint lines: angle 45-75 | time 180 | stress 3.5", 10, FontStyle.Normal,
+            Text limitText = CreateText(right.rectTransform,
+                "Limits: angle 45-75 | time 180s | stress 3.5MPa", UiType.Chart, FontStyle.Normal,
                 Muted, 18f, 498f, 390f, 20f, TextAnchor.MiddleLeft);
+
+            if (compactLayout)
+            {
+                ConfigureCompactMetric(angleValue, 124f);
+                ConfigureCompactMetric(responseValue, 124f);
+                ConfigureCompactMetric(stressValue, 134f);
+                SetRect(traceText.rectTransform, 18f, 184f, 390f, 88f);
+                traceText.fontSize = 14;
+                SetRect(chartTitle.rectTransform, 18f, 276f, 390f, 20f);
+                SetRect(chart.rectTransform, 18f, 300f, 390f, 130f);
+                for (int i = 0; i < trialAxisLabels.Length; i++)
+                {
+                    SetRect(trialAxisLabels[i].rectTransform, 29f + 85f * i, 432f, 30f, 18f);
+                }
+                SetRect(angleRange.rectTransform, 18f, 452f, 132f, 20f);
+                SetRect(timeRange.rectTransform, 150f, 452f, 110f, 20f);
+                SetRect(stressRange.rectTransform, 260f, 452f, 148f, 20f);
+                angleRange.fontSize = 12;
+                timeRange.fontSize = 12;
+                stressRange.fontSize = 12;
+                SetRect(limitText.rectTransform, 18f, 478f, 390f, 20f);
+                limitText.fontSize = 12;
+            }
 
             Image result = CreatePanel(root, "Results", UiLayout.CenterX, UiLayout.ResultsTop,
                 1192f, 248f,
@@ -360,15 +403,19 @@ namespace AdieLab.PineMorphLab
                 Color.white, 22f, 16f, 500f, 34f, TextAnchor.MiddleLeft);
             resultBody = CreateText(result.rectTransform,
                 "Commit a prediction, run the humidity step, and inspect the complete mechanics chain.",
-                15, FontStyle.Normal, new Color(0.80f, 0.88f, 0.86f), 22f, 58f, 590f, 112f,
+                UiType.Body, FontStyle.Normal, new Color(0.80f, 0.88f, 0.86f), 22f, 58f, 590f, 112f,
                 TextAnchor.UpperLeft);
-            CreateText(result.rectTransform, "TRIAL RECORD", 13, FontStyle.Bold,
+            CreateText(result.rectTransform, "TRIAL RECORD", UiType.Control, FontStyle.Bold,
                 new Color(0.60f, 0.84f, 0.80f), 650f, 16f, 500f, 24f, TextAnchor.MiddleLeft);
-            trialHistory = CreateText(result.rectTransform, "No completed trials.", 13, FontStyle.Normal,
+            trialHistory = CreateText(result.rectTransform, "No completed trials.", UiType.Control, FontStyle.Normal,
                 new Color(0.86f, 0.90f, 0.88f), 650f, 46f, 520f, 170f, TextAnchor.UpperLeft);
 
             CreateTutorial(root);
             CreateAssessment(root);
+            if (compactLayout)
+            {
+                ScaleLayout(root, 0.8f);
+            }
         }
 
         private void CreateTutorial(RectTransform root)
@@ -652,13 +699,14 @@ namespace AdieLab.PineMorphLab
                 throw new InvalidOperationException("Trials must be completed in curriculum order.");
             }
 
-            angleValue.text = $"{result.OpeningAngleDeg:0.0} deg\n<size=11>{(result.AngleSafe ? "IN RANGE" : "OUTSIDE 45-75")}</size>";
-            responseValue.text = $"{result.ResponseTimeSeconds:0} s\n<size=11>{(result.ResponseSafe ? "ON TIME" : "TOO SLOW")}</size>";
-            stressValue.text = $"{result.PeakStressMPa:0.00} MPa\n<size=11>{(result.StressSafe ? "BELOW LIMIT" : "OVER LIMIT")}</size>";
+            int statusSize = compactLayout ? 12 : 14;
+            angleValue.text = $"{result.OpeningAngleDeg:0.0} deg\n<size={statusSize}>{(result.AngleSafe ? "IN RANGE" : "OUTSIDE 45-75")}</size>";
+            responseValue.text = $"{result.ResponseTimeSeconds:0} s\n<size={statusSize}>{(result.ResponseSafe ? "ON TIME" : "TOO SLOW")}</size>";
+            stressValue.text = $"{result.PeakStressMPa:0.00} MPa\n<size={statusSize}>{(result.StressSafe ? "BELOW LIMIT" : "OVER LIMIT")}</size>";
             string outcome = OutcomeLabel(result);
             bool predictionCorrect = PredictionLabels[predictionIndex] == outcome;
             resultTitle.text = result.PassesAllConstraints ? "VIABLE PASSIVE ACTUATOR" : outcome;
-            resultTitle.color = result.PassesAllConstraints ? new Color(0.35f, 0.90f, 0.64f) : Coral;
+            resultTitle.color = result.PassesAllConstraints ? new Color(0.35f, 0.90f, 0.64f) : CoralBright;
             resultBody.text = $"Prediction {(predictionCorrect ? "matched" : "did not match")} the result. "
                 + ExplainResult(result);
             stageText.text = $"{trialIndex + 1}. {outcome} | Evidence captured. "
@@ -839,9 +887,9 @@ namespace AdieLab.PineMorphLab
         private Slider CreateSlider(RectTransform parent, string label, float x, float y, float width,
             float min, float max, out Text valueText)
         {
-            CreateText(parent, label.ToUpperInvariant(), 13, FontStyle.Bold, Muted,
+            CreateText(parent, label.ToUpperInvariant(), UiType.Control, FontStyle.Bold, Muted,
                 x, y, width - 100f, 28f, TextAnchor.MiddleLeft);
-            valueText = CreateText(parent, string.Empty, 14, FontStyle.Bold, Teal,
+            valueText = CreateText(parent, string.Empty, UiType.Value, FontStyle.Bold, Teal,
                 x + width - 104f, y, 104f, 28f, TextAnchor.MiddleRight);
             GameObject sliderObject = new GameObject(label, typeof(RectTransform), typeof(Slider));
             sliderObject.transform.SetParent(parent, false);
@@ -893,10 +941,24 @@ namespace AdieLab.PineMorphLab
             Image metric = CreatePanel(parent, label, x, y, width, 88f,
                 new Color(0.06f, 0.12f, 0.12f, 1f));
             CreatePanel(metric.rectTransform, "Accent", 0f, 0f, width, 5f, accent);
-            CreateText(metric.rectTransform, label, 10, FontStyle.Bold,
+            CreateText(metric.rectTransform, label, UiType.MetricLabel, FontStyle.Bold,
                 new Color(0.70f, 0.80f, 0.78f), 8f, 11f, width - 16f, 20f, TextAnchor.MiddleLeft);
-            return CreateText(metric.rectTransform, value, 18, FontStyle.Bold, Color.white,
+            return CreateText(metric.rectTransform, value, UiType.MetricValue, FontStyle.Bold, Color.white,
                 8f, 33f, width - 16f, 46f, TextAnchor.UpperLeft);
+        }
+
+        private static void ConfigureCompactMetric(Text value, float width)
+        {
+            RectTransform metric = (RectTransform)value.rectTransform.parent;
+            metric.sizeDelta = new Vector2(width, 124f);
+            RectTransform accent = (RectTransform)metric.GetChild(0);
+            accent.sizeDelta = new Vector2(width, accent.sizeDelta.y);
+            Text label = metric.GetComponentsInChildren<Text>()[0];
+            label.text = label.text.Replace(" ", "\n");
+            label.fontSize = 12;
+            SetRect(label.rectTransform, 8f, 8f, width - 16f, 40f);
+            value.fontSize = 18;
+            SetRect(value.rectTransform, 8f, 44f, width - 16f, 76f);
         }
 
         private Image CreatePanel(RectTransform parent, string name, float x, float y, float width,
@@ -970,6 +1032,34 @@ namespace AdieLab.PineMorphLab
             return material;
         }
 
+        private static void ScaleLayout(RectTransform root, float scale)
+        {
+            for (int i = 0; i < root.childCount; i++)
+            {
+                ScaleRectTree((RectTransform)root.GetChild(i), scale);
+            }
+        }
+
+        private static void ScaleRectTree(RectTransform rect, float scale)
+        {
+            rect.anchoredPosition *= scale;
+            rect.sizeDelta *= scale;
+            for (int i = 0; i < rect.childCount; i++)
+            {
+                ScaleRectTree((RectTransform)rect.GetChild(i), scale);
+            }
+        }
+
+        private static bool ShouldUseCompactLayout()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            int cssWidth = PineMorphCanvasCssWidth();
+            return cssWidth > 0 && cssWidth < 1200;
+#else
+            return false;
+#endif
+        }
+
         private static void Stretch(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;
@@ -994,6 +1084,9 @@ namespace AdieLab.PineMorphLab
 
         [DllImport("__Internal")]
         private static extern void PineMorphEmitEvent(string json);
+
+        [DllImport("__Internal")]
+        private static extern int PineMorphCanvasCssWidth();
 #endif
     }
 }

@@ -28,6 +28,10 @@ The WebGL wrapper supports desktop browsers at 768 px and wider. Narrower window
 - **Mechanics trace:** five persistent causal stages with one active stage.
 - **Guided learning overlay:** learner-paced Concept-Do-Watch For scaffold with Back, Next, and Skip.
 
+## Typography
+
+Critical instrument text uses a compact but readable scale: 18 px section and stage labels, 17 px body copy, 15 px control labels, 16 px live values, 12 px metric labels, 14 px chart labels, and 20 px metric results. At CSS widths below 1200 px, the Unity UI switches to a 1280 x 720 compact reference layout: geometry contracts to 80% while font sizes remain unchanged. High-contrast teal, amber, coral, and ink retain normal-text contrast on light panels and white-button contrast on commands.
+
 ## Accessibility
 
 All learning content is English text, no instruction depends on color alone, tutorial progress is persistent, animation never auto-advances the lesson, and the camera ignores pointer input over UI. Narrow mobile screens receive a desktop-required WebGL guard.

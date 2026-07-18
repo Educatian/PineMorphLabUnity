@@ -15,5 +15,9 @@ mergeInto(LibraryManager.library, {
     var detail = JSON.parse(UTF8ToString(jsonPtr));
     window.dispatchEvent(new CustomEvent("pinemorph-learning-event", { detail: detail }));
     window.postMessage({ source: "pinemorph-lab", detail: detail }, window.location.origin);
+  },
+  PineMorphCanvasCssWidth: function () {
+    var canvas = document.querySelector("#unity-canvas");
+    return canvas ? Math.round(canvas.clientWidth) : 0;
   }
 });
