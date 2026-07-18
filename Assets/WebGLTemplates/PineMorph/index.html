@@ -163,7 +163,7 @@
         line-height: 1.5;
       }
 
-      @media (max-width: 1099px) {
+      @media (max-width: 767px) {
         body {
           overflow: auto;
         }
@@ -216,7 +216,7 @@
     </section>
 
     <script>
-      var isUnsupportedDevice = window.matchMedia("(max-width: 1099px)").matches
+      var isUnsupportedDevice = window.matchMedia("(max-width: 767px)").matches
         || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isUnsupportedDevice) {
         document.documentElement.classList.add("unsupported-device");

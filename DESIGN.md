@@ -18,7 +18,7 @@ The 1600 x 900 reference canvas uses a fixed header, left design rail, central u
 | `WorkspaceTop` | 80 | Shared panel origin |
 | `ResultsTop` | 632 | Stable bottom evidence band |
 
-The WebGL wrapper supports the full simulator at 1100 px and wider. Narrower windows and touch-device user agents receive one consistent desktop-required guard before Unity loads.
+The WebGL wrapper supports desktop browsers at 768 px and wider. Narrower windows and mobile or tablet user agents receive one consistent desktop-required guard before Unity loads.
 
 ## Components
 
