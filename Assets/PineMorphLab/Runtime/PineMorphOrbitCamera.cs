@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 namespace AdieLab.PineMorphLab
 {
@@ -10,27 +8,47 @@ namespace AdieLab.PineMorphLab
         private float yaw = -23f;
         private float pitch = 18f;
         private float distance = 7.8f;
+        private PineMorphApp app;
+        private Camera orbitCamera;
+
+        private void Awake()
+        {
+            app = FindAnyObjectByType<PineMorphApp>();
+            orbitCamera = GetComponent<Camera>();
+        }
+
+        public void Initialize(PineMorphApp owner)
+        {
+            app = owner;
+        }
 
         private void LateUpdate()
         {
-            Mouse mouse = Mouse.current;
-            if (mouse != null)
+            bool insideViewport = orbitCamera != null
+                && orbitCamera.pixelRect.Contains(Input.mousePosition)
+                && (app == null || !app.TutorialVisible);
+            if (Input.GetMouseButton(0) && insideViewport)
             {
-                bool overUi = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-                if (mouse.leftButton.isPressed && !overUi)
+                Vector2 delta = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+                yaw += delta.x * 2.4f;
+                pitch = Mathf.Clamp(pitch - delta.y * 2.1f, -5f, 58f);
+                if (delta.sqrMagnitude > 0.0001f)
                 {
-                    Vector2 delta = mouse.delta.ReadValue();
-                    yaw += delta.x * 0.16f;
-                    pitch = Mathf.Clamp(pitch - delta.y * 0.14f, -5f, 58f);
-                }
-
-                if (!overUi)
-                {
-                    distance = Mathf.Clamp(distance - mouse.scroll.ReadValue().y * 0.004f, 5.2f, 11.5f);
+                    app?.NotifyCameraRotated();
                 }
             }
 
-            if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
+            if (insideViewport)
+            {
+                float scroll = Input.mouseScrollDelta.y;
+                distance = Mathf.Clamp(distance - scroll * 0.55f, 5.2f, 11.5f);
+                if (Mathf.Abs(scroll) > 0.01f)
+                {
+                    app?.NotifyCameraZoomed();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.R))
             {
                 yaw = -23f;
                 pitch = 18f;

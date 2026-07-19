@@ -14,14 +14,15 @@ The simulator is designed for a desktop or laptop browser with a mouse or trackp
 
 During five Predict-Observe-Explain trials, learners:
 
-1. inspect the active and passive layers of a humidity-responsive structure;
-2. predict the limiting outcome before each test;
-3. isolate fiber orientation, thickness, and stiffness effects;
-4. follow a synchronized mechanics trace from humidity to design constraints;
-5. compare opening angle, response time, and peak stress across trials;
-6. revise an unsafe final design until all three constraints are met;
-7. complete a Claim-Evidence-Reasoning check; and
-8. export anonymous trial data as CSV.
+1. rotate and zoom the model, then inspect clickable biological and engineered objects;
+2. manipulate each design control in a required guided practice;
+3. predict the limiting outcome before each test;
+4. isolate fiber orientation, thickness, and stiffness effects;
+5. follow a synchronized mechanics trace from humidity to design constraints;
+6. compare opening angle, response time, and peak stress across trials;
+7. revise an unsafe final design until all three constraints are met;
+8. complete a Claim-Evidence-Reasoning check; and
+9. export anonymous trial data as CSV.
 
 ## Instructional constraints
 
@@ -56,6 +57,7 @@ The graph is a normalized constraint map. Teal, amber, and coral encode opening 
 | Fiber Angle | Transforms hygroscopic expansion along the hinge axis |
 | Drag in 3D viewport | Rotate the model |
 | Mouse wheel | Zoom |
+| Click a layer or pine cone | Highlight the object and reveal its mechanical role |
 | `R` | Reset the camera |
 
 All sliders remain adjustable during every trial. Changing a design after selecting a prediction clears that prediction so the tested design and recorded prediction cannot become mismatched.
@@ -64,7 +66,8 @@ All sliders remain adjustable during every trial. Changing a design after select
 
 - Unity `6000.4.9f1`
 - `10/10` EditMode analytical physics tests
-- automated PlayMode tutorial, control, prediction, run, result, and navigation QA
+- automated PlayMode verification of required rotate, zoom, object-selection, and slider practice
+- automated prediction, run, result, and navigation QA
 - PlayMode verification that rerunning a trial replaces, rather than duplicates, its record
 - runtime-generated 3D bilayer and English UGUI interface
 - deterministic orbit verification with distinct before/after visual evidence

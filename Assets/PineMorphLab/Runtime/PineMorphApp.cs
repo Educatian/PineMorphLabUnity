@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace AdieLab.PineMorphLab
@@ -91,6 +90,11 @@ namespace AdieLab.PineMorphLab
         private bool running;
         private bool applyingPreset;
         private bool compactLayout;
+        private int guidedPractice = -1;
+        private bool cameraRotated;
+        private bool cameraZoomed;
+        private bool objectInspected;
+        private PineMorphInspectable selectedInspectable;
 
         public int CurrentTrial => trialIndex;
         public int CompletedTrialCount => testedResults.Count;
@@ -103,7 +107,7 @@ namespace AdieLab.PineMorphLab
 
         private static readonly string[] TutorialTitles =
         {
-            "Read the biological strategy",
+            "Explore the biological mechanism",
             "Balance the layer thicknesses",
             "Change the stiffness ratio",
             "Rotate the reinforcing fibers",
@@ -121,11 +125,11 @@ namespace AdieLab.PineMorphLab
 
         private static readonly string[] TutorialActions =
         {
-            "Inspect the green active layer and brown passive layer in the 3D viewport.",
-            "After this guide closes, move ACTIVE LAYER FRACTION and compare curvature with response time.",
-            "After this guide closes, move STIFFNESS RATIO and watch how the stress prediction changes.",
-            "After this guide closes, move FIBER ANGLE and predict the direction of the opening change.",
-            "After this guide closes, choose an outcome before RUN TEST, then use all three metrics to explain the result."
+            "Drag to rotate, use the wheel to zoom, and click a layer or the pine cone.",
+            "Move ACTIVE LAYER FRACTION to connect geometry with curvature and response time.",
+            "Move STIFFNESS RATIO to connect load sharing with the stress prediction.",
+            "Move FIBER ANGLE to connect orientation with transformed expansion.",
+            "Choose an outcome before RUN TEST, then use all three metrics to explain the result."
         };
 
         private static readonly string[] TutorialEvidence =
@@ -159,10 +163,11 @@ namespace AdieLab.PineMorphLab
 
         private void Update()
         {
-            if (TutorialVisible && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (TutorialVisible && Input.GetKeyDown(KeyCode.Escape))
             {
                 CloseTutorial();
             }
+            HandleViewportSelection();
         }
 
         private void CreateWorld()
@@ -180,7 +185,8 @@ namespace AdieLab.PineMorphLab
             camera.fieldOfView = 38f;
             camera.rect = new Rect(UiLayout.CenterX / 1600f, 268f / 900f,
                 UiLayout.CenterWidth / 1600f, 432f / 900f);
-            camera.gameObject.AddComponent<PineMorphOrbitCamera>();
+            PineMorphOrbitCamera orbitCamera = camera.gameObject.AddComponent<PineMorphOrbitCamera>();
+            orbitCamera.Initialize(this);
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.38f, 0.43f, 0.42f);
@@ -234,6 +240,9 @@ namespace AdieLab.PineMorphLab
         {
             GameObject cone = new GameObject("Pine Cone Reference");
             cone.transform.position = new Vector3(-2.25f, -0.12f, 2.75f);
+            BoxCollider coneCollider = cone.AddComponent<BoxCollider>();
+            coneCollider.center = new Vector3(0f, 0.85f, 0f);
+            coneCollider.size = new Vector3(1.35f, 2.15f, 1.35f);
             Material scaleMaterial = MaterialFor(new Color(0.33f, 0.16f, 0.075f), 0.02f, 0.38f);
             for (int row = 0; row < 7; row++)
             {
@@ -253,6 +262,10 @@ namespace AdieLab.PineMorphLab
                     Destroy(scale.GetComponent<Collider>());
                 }
             }
+            cone.AddComponent<PineMorphInspectable>().Configure(
+                "PINE CONE REFERENCE",
+                "Natural scales use bonded tissues with unequal hygroscopic strain to open and close.",
+                cone.GetComponentsInChildren<Renderer>());
         }
 
         private void CreateInterface()
@@ -297,9 +310,9 @@ namespace AdieLab.PineMorphLab
                 0.30f, 5f, out stiffnessValue);
             fiberSlider = CreateSlider(left.rectTransform, "Fiber Angle", 18f, 278f, 314f,
                 0f, 90f, out fiberValue);
-            thicknessSlider.onValueChanged.AddListener(_ => OnDesignChanged());
-            stiffnessSlider.onValueChanged.AddListener(_ => OnDesignChanged());
-            fiberSlider.onValueChanged.AddListener(_ => OnDesignChanged());
+            thicknessSlider.onValueChanged.AddListener(_ => OnDesignChanged(0));
+            stiffnessSlider.onValueChanged.AddListener(_ => OnDesignChanged(1));
+            fiberSlider.onValueChanged.AddListener(_ => OnDesignChanged(2));
 
             CreateText(left.rectTransform, "PREDICT THE LIMITING OUTCOME", UiType.Control, FontStyle.Bold,
                 Muted, 18f, 368f, 314f, 24f, TextAnchor.MiddleLeft);
@@ -443,7 +456,7 @@ namespace AdieLab.PineMorphLab
                 }
                 else
                 {
-                    ShowTutorial(tutorialIndex + 1);
+                    BeginTutorialPractice();
                 }
             });
         }
@@ -558,7 +571,7 @@ namespace AdieLab.PineMorphLab
                 : "Commit a prediction before the humidity step reveals the analytical result.";
         }
 
-        private void OnDesignChanged()
+        private void OnDesignChanged(int changedControl)
         {
             UpdateInputLabels();
             if (applyingPreset || running)
@@ -575,6 +588,24 @@ namespace AdieLab.PineMorphLab
             stageText.text = trialIndex == 4
                 ? "5. OPTIMIZE | Design changed. Commit a new prediction and test all three constraints."
                 : $"{trialIndex + 1}. PREDICT | Design changed. Commit a prediction that matches these settings.";
+
+            if (guidedPractice > 0)
+            {
+                int expectedControl = guidedPractice - 1;
+                if (changedControl == expectedControl)
+                {
+                    int completedStep = guidedPractice;
+                    guidedPractice = -1;
+                    SetTutorialFocus(-1);
+                    RecordEvent("tutorial_practice_completed",
+                        (completedStep + 1).ToString(CultureInfo.InvariantCulture));
+                    ShowTutorial(completedStep + 1);
+                }
+                else
+                {
+                    stageText.text = $"GUIDED TRY {guidedPractice + 1}/5 | Move the highlighted control.";
+                }
+            }
         }
 
         private PineMorphInput CurrentInput()
@@ -864,6 +895,8 @@ namespace AdieLab.PineMorphLab
 
         private void ShowTutorial(int index)
         {
+            guidedPractice = -1;
+            SetTutorialFocus(-1);
             tutorialIndex = Mathf.Clamp(index, 0, TutorialTitles.Length - 1);
             tutorialOverlay.SetActive(true);
             tutorialOverlay.transform.SetAsLastSibling();
@@ -874,14 +907,127 @@ namespace AdieLab.PineMorphLab
                 + $"<b><color=#74D7CB>WATCH FOR</color></b>  {TutorialEvidence[tutorialIndex]}";
             tutorialBack.interactable = tutorialIndex > 0;
             tutorialNext.GetComponentInChildren<Text>().text = tutorialIndex == TutorialTitles.Length - 1
-                ? "START LAB" : "NEXT";
+                ? "START LAB"
+                : tutorialIndex == 0 ? "EXPLORE" : "TRY CONTROL";
             RecordEvent("tutorial_step", (tutorialIndex + 1).ToString(CultureInfo.InvariantCulture));
         }
 
         private void CloseTutorial()
         {
+            guidedPractice = -1;
+            SetTutorialFocus(-1);
             tutorialOverlay.SetActive(false);
             RecordEvent("tutorial_closed", (tutorialIndex + 1).ToString(CultureInfo.InvariantCulture));
+        }
+
+        private void BeginTutorialPractice()
+        {
+            guidedPractice = tutorialIndex;
+            tutorialOverlay.SetActive(false);
+            if (guidedPractice == 0)
+            {
+                cameraRotated = false;
+                cameraZoomed = false;
+                objectInspected = false;
+                stageText.text = "GUIDED TRY 1/5 | Drag to rotate, wheel to zoom, then click an object.";
+            }
+            else
+            {
+                SetTutorialFocus(guidedPractice - 1);
+                stageText.text = $"GUIDED TRY {guidedPractice + 1}/5 | Move the highlighted control.";
+            }
+            RecordEvent("tutorial_practice_started",
+                (guidedPractice + 1).ToString(CultureInfo.InvariantCulture));
+        }
+
+        private void SetTutorialFocus(int controlIndex)
+        {
+            if (thicknessValue == null)
+            {
+                return;
+            }
+
+            thicknessValue.color = controlIndex == 0 ? Amber : Teal;
+            stiffnessValue.color = controlIndex == 1 ? Amber : Teal;
+            fiberValue.color = controlIndex == 2 ? Amber : Teal;
+        }
+
+        public void NotifyCameraRotated()
+        {
+            if (!cameraRotated)
+            {
+                cameraRotated = true;
+                RecordEvent("camera_rotated", "");
+            }
+            CheckViewportPractice();
+        }
+
+        public void NotifyCameraZoomed()
+        {
+            if (!cameraZoomed)
+            {
+                cameraZoomed = true;
+                RecordEvent("camera_zoomed", "");
+            }
+            CheckViewportPractice();
+        }
+
+        public void NotifyObjectSelected(PineMorphInspectable inspectable)
+        {
+            if (inspectable == null)
+            {
+                return;
+            }
+
+            selectedInspectable?.SetSelected(false);
+            selectedInspectable = inspectable;
+            selectedInspectable.SetSelected(true);
+            objectInspected = true;
+            stageText.text = $"OBJECT: {inspectable.Label} | {inspectable.Detail}";
+            RecordEvent("object_selected", inspectable.Label);
+            CheckViewportPractice();
+        }
+
+        private void CheckViewportPractice()
+        {
+            if (guidedPractice != 0)
+            {
+                return;
+            }
+
+            if (cameraRotated && cameraZoomed && objectInspected)
+            {
+                guidedPractice = -1;
+                RecordEvent("tutorial_practice_completed", "1");
+                ShowTutorial(1);
+                return;
+            }
+
+            string rotate = cameraRotated ? "done" : "drag";
+            string zoom = cameraZoomed ? "done" : "wheel";
+            string inspect = objectInspected ? "done" : "click";
+            stageText.text = $"GUIDED TRY 1/5 | Rotate: {rotate}  Zoom: {zoom}  Inspect: {inspect}";
+        }
+
+        private void HandleViewportSelection()
+        {
+            Camera camera = Camera.main;
+            if (camera == null || TutorialVisible || !Input.GetMouseButtonDown(0))
+            {
+                return;
+            }
+
+            Vector2 pointer = Input.mousePosition;
+            if (!camera.pixelRect.Contains(pointer))
+            {
+                return;
+            }
+
+            Ray ray = camera.ScreenPointToRay(pointer);
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+            {
+                NotifyObjectSelected(hit.collider.GetComponentInParent<PineMorphInspectable>());
+            }
         }
 
         private Slider CreateSlider(RectTransform parent, string label, float x, float y, float width,

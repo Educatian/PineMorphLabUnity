@@ -13,13 +13,24 @@ namespace AdieLab.PineMorphLab
         private Mesh passiveMesh;
         private MeshRenderer activeRenderer;
         private MeshRenderer passiveRenderer;
+        private MeshCollider activeCollider;
+        private MeshCollider passiveCollider;
+        private float previousProgress = -1f;
 
         public void Initialize(Material activeMaterial, Material passiveMaterial)
         {
             activeMesh = new Mesh { name = "Active hygroscopic layer" };
             passiveMesh = new Mesh { name = "Passive structural layer" };
-            activeRenderer = CreateLayer("Active Layer", activeMesh, activeMaterial);
-            passiveRenderer = CreateLayer("Passive Layer", passiveMesh, passiveMaterial);
+            activeRenderer = CreateLayer("Active Layer", activeMesh, activeMaterial, out activeCollider);
+            passiveRenderer = CreateLayer("Passive Layer", passiveMesh, passiveMaterial, out passiveCollider);
+            activeRenderer.gameObject.AddComponent<PineMorphInspectable>().Configure(
+                "ACTIVE HYGROSCOPIC LAYER",
+                "Swells with humidity. Its thickness controls both bending leverage and diffusion time.",
+                activeRenderer);
+            passiveRenderer.gameObject.AddComponent<PineMorphInspectable>().Configure(
+                "PASSIVE STRUCTURAL LAYER",
+                "Restrains free swelling and converts strain mismatch into bending moment.",
+                passiveRenderer);
             if (activeRenderer.sharedMaterial.HasProperty("_FiberStrength"))
             {
                 activeRenderer.sharedMaterial.SetFloat("_FiberStrength", 0.72f);
@@ -34,6 +45,13 @@ namespace AdieLab.PineMorphLab
             float bendRadians = Mathf.Clamp(result.OpeningAngleDeg * Mathf.Deg2Rad * progress, 0f, 2.35f);
             BuildLayer(activeMesh, bendRadians, activeThickness * 0.5f, activeThickness);
             BuildLayer(passiveMesh, bendRadians, -passiveThickness * 0.5f, passiveThickness);
+            bool endpointChanged = progress <= 0.001f || (progress >= 0.999f && previousProgress < 0.999f);
+            if (endpointChanged)
+            {
+                RefreshCollider(activeCollider, activeMesh);
+                RefreshCollider(passiveCollider, passiveMesh);
+            }
+            previousProgress = progress;
             if (activeRenderer.sharedMaterial.HasProperty("_FiberAngle"))
             {
                 activeRenderer.sharedMaterial.SetFloat("_FiberAngle", input.FiberAngleDeg);
@@ -54,14 +72,23 @@ namespace AdieLab.PineMorphLab
             }
         }
 
-        private MeshRenderer CreateLayer(string objectName, Mesh mesh, Material material)
+        private MeshRenderer CreateLayer(string objectName, Mesh mesh, Material material,
+            out MeshCollider meshCollider)
         {
-            GameObject layer = new GameObject(objectName, typeof(MeshFilter), typeof(MeshRenderer));
+            GameObject layer = new GameObject(objectName, typeof(MeshFilter), typeof(MeshRenderer),
+                typeof(MeshCollider));
             layer.transform.SetParent(transform, false);
             layer.GetComponent<MeshFilter>().sharedMesh = mesh;
+            meshCollider = layer.GetComponent<MeshCollider>();
             MeshRenderer renderer = layer.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             return renderer;
+        }
+
+        private static void RefreshCollider(MeshCollider meshCollider, Mesh mesh)
+        {
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
         }
 
         private static void BuildLayer(Mesh mesh, float totalAngle, float normalOffset, float thickness)

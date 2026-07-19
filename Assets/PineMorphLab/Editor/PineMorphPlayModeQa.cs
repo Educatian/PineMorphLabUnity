@@ -72,7 +72,7 @@ namespace AdieLab.PineMorphLab.Editor
                 if (phase == 0 && elapsed > 2.5d)
                 {
                     ValidateInitial();
-                    Find<Button>("SKIP").onClick.Invoke();
+                    ValidateHandsOnTutorial();
                     Find<Button>("UNDER-OPENS").onClick.Invoke();
                     Find<Button>("RUN TEST").onClick.Invoke();
                     phase = 1;
@@ -109,6 +109,8 @@ namespace AdieLab.PineMorphLab.Editor
             PineMorphApp app = UnityEngine.Object.FindAnyObjectByType<PineMorphApp>();
             Require(app != null, "PineMorph app is missing.");
             Require(app.TutorialVisible, "Guided learning should open on first load.");
+            Require(Find<Button>("NEXT").GetComponentInChildren<Text>().text == "EXPLORE",
+                "The first tutorial action should launch hands-on viewport practice.");
             Require(Camera.main != null, "Main camera is missing.");
             Require(Find<Slider>("Active Layer Fraction").interactable,
                 "Active layer slider should be adjustable.");
@@ -127,6 +129,34 @@ namespace AdieLab.PineMorphLab.Editor
                         $"Text {label.name} did not generate visible geometry.");
                 }
             }
+        }
+
+        private static void ValidateHandsOnTutorial()
+        {
+            PineMorphApp app = UnityEngine.Object.FindAnyObjectByType<PineMorphApp>();
+            Button next = Find<Button>("NEXT");
+            next.onClick.Invoke();
+            Require(!app.TutorialVisible, "Explore should reveal the interactive viewport.");
+
+            app.NotifyCameraRotated();
+            app.NotifyCameraZoomed();
+            PineMorphInspectable inspectable =
+                UnityEngine.Object.FindAnyObjectByType<PineMorphInspectable>();
+            Require(inspectable != null, "At least one 3D object must be inspectable.");
+            app.NotifyObjectSelected(inspectable);
+            Require(app.TutorialVisible, "Viewport practice should advance after all three actions.");
+
+            next.onClick.Invoke();
+            Find<Slider>("Active Layer Fraction").value += 0.05f;
+            Require(app.TutorialVisible, "Thickness practice should advance after manipulation.");
+            next.onClick.Invoke();
+            Find<Slider>("Stiffness Ratio Ea/Ep").value += 0.10f;
+            Require(app.TutorialVisible, "Stiffness practice should advance after manipulation.");
+            next.onClick.Invoke();
+            Find<Slider>("Fiber Angle").value += 5f;
+            Require(app.TutorialVisible, "Fiber practice should advance after manipulation.");
+            next.onClick.Invoke();
+            Require(!app.TutorialVisible, "Start Lab should close guided learning.");
         }
 
         private static void ValidateResult()
