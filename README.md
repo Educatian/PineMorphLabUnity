@@ -10,6 +10,16 @@ The current revision is an English-only instructional MVP for a 10-15 minute mec
 
 The simulator is designed for a desktop or laptop browser with a mouse or trackpad. Phones and tablets receive a lightweight device notice instead of downloading the Unity player.
 
+## Current WebGL build
+
+The screenshots below come from the current production WebGL build at a verified 1600 x 900 desktop viewport.
+
+![PineMorph upgraded humidity chamber and biological reference](Documentation/Images/pinemorph-overview.png)
+
+![PineMorph rotate, zoom, and clickable active-layer state](Documentation/Images/pinemorph-interaction.png)
+
+![PineMorph live constraint map and completed trial](Documentation/Images/pinemorph-result.png)
+
 ## Learning experience
 
 During five Predict-Observe-Explain trials, learners:
@@ -73,7 +83,7 @@ All sliders remain adjustable during every trial. Changing a design after select
 - deterministic orbit verification with distinct before/after visual evidence
 - anonymous JSONL/WebGL learning events
 - WebGL-compatible CSV download bridge
-- Chromium WebGL workflow QA at `1440 x 900`
+- Chromium WebGL workflow QA at `1600 x 900`
 - consistent phone and `1024 x 768` tablet guard verification
 
 ## Open the project
@@ -91,6 +101,20 @@ Use `Tools > PineMorph Lab > Build Windows` or `Tools > PineMorph Lab > Build We
 - [Evidence-centered design](GAME_CONCEPT.md)
 - [Learning guide](LEARNING_GUIDE.md)
 - [Design system](DESIGN.md)
+
+## Blender asset pipeline
+
+PineMorph now includes an editable Blender source pack and runtime FBX set for the humidity stage, precision clamps, overlapping pine-cone scales, bilayer coupon, and tissue cross-section. The live `PineMorphRibbon` still deforms from analytical model output; the imported assets provide laboratory context and biological detail without replacing the mechanics.
+
+| Asset group | Runtime role |
+| --- | --- |
+| Humidity stage and clamps | Boundary conditions, sensing, and moisture-test context |
+| Pine cone reference | Clickable biological mechanism |
+| Bilayer coupon | Active/passive layer and fiber scaffold |
+| Scale cross-section | Tissue anisotropy and pore structure |
+| HUD renders | Visual scaffolds beside thickness, stiffness, and fiber controls |
+
+Rebuild the pack with `python Tools/build_pinemorph_assets.py` and verify it with `python Tools/verify_pinemorph_assets.py`. See [the asset upgrade audit](Documentation/ASSET_UPGRADE_AUDIT.md) for the gap list, integration contract, and fresh browser-validation record.
 
 ## Engineering limitations
 

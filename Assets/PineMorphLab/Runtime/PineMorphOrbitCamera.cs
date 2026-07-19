@@ -4,10 +4,10 @@ namespace AdieLab.PineMorphLab
 {
     public sealed class PineMorphOrbitCamera : MonoBehaviour
     {
-        private Vector3 target = new Vector3(0f, 1.15f, 2.1f);
+        private Vector3 target = new Vector3(0f, 0.92f, 1.62f);
         private float yaw = -23f;
         private float pitch = 18f;
-        private float distance = 7.8f;
+        private float distance = 6.35f;
         private PineMorphApp app;
         private Camera orbitCamera;
 
@@ -41,7 +41,7 @@ namespace AdieLab.PineMorphLab
             if (insideViewport)
             {
                 float scroll = Input.mouseScrollDelta.y;
-                distance = Mathf.Clamp(distance - scroll * 0.55f, 5.2f, 11.5f);
+                distance = Mathf.Clamp(distance - scroll * 0.55f, 4.6f, 10.0f);
                 if (Mathf.Abs(scroll) > 0.01f)
                 {
                     app?.NotifyCameraZoomed();
@@ -52,7 +52,7 @@ namespace AdieLab.PineMorphLab
             {
                 yaw = -23f;
                 pitch = 18f;
-                distance = 7.8f;
+                distance = 6.35f;
             }
 
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);

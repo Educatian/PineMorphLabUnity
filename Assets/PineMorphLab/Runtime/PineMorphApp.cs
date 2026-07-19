@@ -182,7 +182,7 @@ namespace AdieLab.PineMorphLab
                 camera = cameraObject.GetComponent<Camera>();
             }
 
-            camera.backgroundColor = new Color(0.72f, 0.79f, 0.78f, 1f);
+            camera.backgroundColor = new Color(0.115f, 0.15f, 0.15f, 1f);
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.fieldOfView = 38f;
             camera.rect = new Rect(UiLayout.CenterX / 1600f, 268f / 900f,
@@ -191,11 +191,11 @@ namespace AdieLab.PineMorphLab
             orbitCamera.Initialize(this);
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.38f, 0.43f, 0.42f);
+            RenderSettings.ambientLight = new Color(0.24f, 0.28f, 0.27f);
 
             Light mainLight = new GameObject("Key Light", typeof(Light)).GetComponent<Light>();
             mainLight.type = LightType.Directional;
-            mainLight.intensity = 1.25f;
+            mainLight.intensity = 1.45f;
             mainLight.color = new Color(1f, 0.94f, 0.84f);
             mainLight.transform.rotation = Quaternion.Euler(45f, -32f, 0f);
             mainLight.shadows = LightShadows.Soft;
@@ -205,6 +205,15 @@ namespace AdieLab.PineMorphLab
             fill.color = new Color(0.58f, 0.78f, 0.84f);
             fill.transform.rotation = Quaternion.Euler(25f, 145f, 0f);
 
+            Light rim = new GameObject("Specimen Rim Light", typeof(Light)).GetComponent<Light>();
+            rim.type = LightType.Spot;
+            rim.range = 9f;
+            rim.spotAngle = 54f;
+            rim.intensity = 3.6f;
+            rim.color = new Color(0.48f, 0.83f, 0.64f);
+            rim.transform.position = new Vector3(3.2f, 4.1f, 3.8f);
+            rim.transform.rotation = Quaternion.LookRotation(new Vector3(0f, 0.7f, 1.5f) - rim.transform.position);
+
             Material floorMaterial = MaterialFor(new Color(0.23f, 0.29f, 0.28f), 0.12f, 0.45f);
             GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             floor.name = "Laboratory Plinth";
@@ -212,62 +221,63 @@ namespace AdieLab.PineMorphLab
             floor.transform.localScale = new Vector3(7.3f, 0.26f, 6.5f);
             floor.GetComponent<Renderer>().material = floorMaterial;
 
-            Material platformMaterial = MaterialFor(new Color(0.62f, 0.69f, 0.67f), 0.28f, 0.58f);
-            GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            platform.name = "Actuator Platform";
-            platform.transform.position = new Vector3(0f, -0.25f, 1.95f);
-            platform.transform.localScale = new Vector3(2.75f, 0.08f, 2.75f);
-            platform.GetComponent<Renderer>().material = platformMaterial;
+            Material frameMaterial = MaterialFor(new Color(0.07f, 0.10f, 0.10f), 0.62f, 0.42f);
+            CreateWorldPanel("Chamber Backdrop", new Vector3(0f, 1.55f, 4.75f), new Vector3(6.7f, 3.5f, 0.12f), frameMaterial);
+            CreateWorldPanel("Left Chamber Rail", new Vector3(-3.18f, 1.0f, 2.15f), new Vector3(0.12f, 3.0f, 5.1f), frameMaterial);
+            CreateWorldPanel("Right Chamber Rail", new Vector3(3.18f, 1.0f, 2.15f), new Vector3(0.12f, 3.0f, 5.1f), frameMaterial);
+
+            PineMorphAssetLoader.InstantiateModel("Models/HumidityStage", "Humidity Test Stage", null,
+                new Vector3(0f, -0.52f, 1.95f), Quaternion.identity, new Vector3(1.04f, 1.04f, 1.04f));
 
             GameObject ribbonObject = new GameObject("Hygromorphic Bilayer");
-            ribbonObject.transform.position = new Vector3(0f, 0f, -0.25f);
+            ribbonObject.transform.position = new Vector3(0f, 0.02f, -0.55f);
             ribbon = ribbonObject.AddComponent<PineMorphRibbon>();
             ribbon.Initialize(MaterialFor(ActiveLayer, 0.05f, 0.62f),
                 MaterialFor(PassiveLayer, 0.02f, 0.48f));
 
-            Material clampMaterial = MaterialFor(new Color(0.12f, 0.16f, 0.17f), 0.68f, 0.55f);
             for (int i = -1; i <= 1; i += 2)
             {
-                GameObject clamp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                clamp.name = i < 0 ? "Clamp Left" : "Clamp Right";
-                clamp.transform.position = new Vector3(i * 0.84f, 0.06f, -0.18f);
-                clamp.transform.localScale = new Vector3(0.12f, 0.62f, 0.68f);
-                clamp.GetComponent<Renderer>().material = clampMaterial;
+                PineMorphAssetLoader.InstantiateModel("Models/PrecisionClamp",
+                    i < 0 ? "Precision Clamp Left" : "Precision Clamp Right", null,
+                    new Vector3(i * 0.96f, -0.10f, -0.48f), Quaternion.Euler(0f, i < 0 ? 0f : 180f, 0f),
+                    new Vector3(0.60f, 0.60f, 0.60f));
             }
 
             CreatePineConeReference();
         }
 
+        private static void CreateWorldPanel(string name, Vector3 position, Vector3 scale, Material material)
+        {
+            GameObject panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            panel.name = name;
+            panel.transform.position = position;
+            panel.transform.localScale = scale;
+            panel.GetComponent<Renderer>().material = material;
+        }
+
         private void CreatePineConeReference()
         {
-            GameObject cone = new GameObject("Pine Cone Reference");
-            cone.transform.position = new Vector3(-2.25f, -0.12f, 2.75f);
+            GameObject cone = PineMorphAssetLoader.InstantiateModel("Models/PineConeReference",
+                "Pine Cone Reference", null, new Vector3(-2.30f, -0.26f, 2.30f),
+                Quaternion.Euler(0f, 18f, 0f), new Vector3(1.02f, 1.02f, 1.02f));
             BoxCollider coneCollider = cone.AddComponent<BoxCollider>();
             coneCollider.center = new Vector3(0f, 0.85f, 0f);
             coneCollider.size = new Vector3(1.35f, 2.15f, 1.35f);
-            Material scaleMaterial = MaterialFor(new Color(0.33f, 0.16f, 0.075f), 0.02f, 0.38f);
-            for (int row = 0; row < 7; row++)
-            {
-                int count = 6 + row;
-                float radius = Mathf.Lerp(0.24f, 0.58f, Mathf.Sin((row + 1f) / 8f * Mathf.PI));
-                for (int i = 0; i < count; i++)
-                {
-                    float angle = (i + row * 0.45f) * Mathf.PI * 2f / count;
-                    GameObject scale = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    scale.name = "Cone Scale";
-                    scale.transform.SetParent(cone.transform, false);
-                    scale.transform.localPosition = new Vector3(Mathf.Cos(angle) * radius,
-                        row * 0.27f, Mathf.Sin(angle) * radius);
-                    scale.transform.localRotation = Quaternion.Euler(18f, -angle * Mathf.Rad2Deg, 0f);
-                    scale.transform.localScale = new Vector3(0.28f, 0.10f, 0.48f);
-                    scale.GetComponent<Renderer>().material = scaleMaterial;
-                    Destroy(scale.GetComponent<Collider>());
-                }
-            }
             cone.AddComponent<PineMorphInspectable>().Configure(
                 "PINE CONE REFERENCE",
-                "Natural scales use bonded tissues with unequal hygroscopic strain to open and close.",
+                "Overlapping scales use bonded tissues with unequal hygroscopic strain to open and close.",
                 cone.GetComponentsInChildren<Renderer>());
+
+            GameObject section = PineMorphAssetLoader.InstantiateModel("Models/ScaleCrossSection",
+                "Scale Tissue Cross Section", null, new Vector3(2.25f, -0.12f, 2.20f),
+                Quaternion.Euler(0f, -18f, 0f), new Vector3(0.72f, 0.72f, 0.72f));
+            BoxCollider sectionCollider = section.AddComponent<BoxCollider>();
+            sectionCollider.center = new Vector3(0f, 0.18f, 0f);
+            sectionCollider.size = new Vector3(2.1f, 0.75f, 0.9f);
+            section.AddComponent<PineMorphInspectable>().Configure(
+                "SCALE TISSUE SECTION",
+                "The active layer, passive layer, cellulose bundles, and pores create directional moisture expansion.",
+                section.GetComponentsInChildren<Renderer>());
         }
 
         private void CreateInterface()
@@ -306,11 +316,14 @@ namespace AdieLab.PineMorphLab
                 "Tune the bonded layers before committing a prediction.", UiType.Body, FontStyle.Normal,
                 Muted, 18f, 46f, 314f, 44f, TextAnchor.UpperLeft);
 
-            thicknessSlider = CreateSlider(left.rectTransform, "Active Layer Fraction", 18f, 102f, 314f,
+            PineMorphAssetLoader.AddHudImage(left.rectTransform, "Hud/hud_bilayer_coupon", new Rect(18f, 102f, 40f, 40f));
+            thicknessSlider = CreateSlider(left.rectTransform, "Active Layer Fraction", 64f, 102f, 268f,
                 0.20f, 0.80f, out thicknessValue);
-            stiffnessSlider = CreateSlider(left.rectTransform, "Stiffness Ratio Ea/Ep", 18f, 190f, 314f,
+            PineMorphAssetLoader.AddHudImage(left.rectTransform, "Hud/hud_precision_clamp", new Rect(18f, 190f, 40f, 40f));
+            stiffnessSlider = CreateSlider(left.rectTransform, "Stiffness Ratio Ea/Ep", 64f, 190f, 268f,
                 0.30f, 5f, out stiffnessValue);
-            fiberSlider = CreateSlider(left.rectTransform, "Fiber Angle", 18f, 278f, 314f,
+            PineMorphAssetLoader.AddHudImage(left.rectTransform, "Hud/hud_scale_section", new Rect(18f, 278f, 40f, 40f));
+            fiberSlider = CreateSlider(left.rectTransform, "Fiber Angle", 64f, 278f, 268f,
                 0f, 90f, out fiberValue);
             thicknessSlider.onValueChanged.AddListener(_ => OnDesignChanged(0));
             stiffnessSlider.onValueChanged.AddListener(_ => OnDesignChanged(1));

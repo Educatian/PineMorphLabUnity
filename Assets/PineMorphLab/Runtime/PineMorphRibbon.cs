@@ -4,10 +4,10 @@ namespace AdieLab.PineMorphLab
 {
     public sealed class PineMorphRibbon : MonoBehaviour
     {
-        private const int Segments = 40;
+        private const int Segments = 64;
         private const float VisualLength = 4.6f;
-        private const float VisualWidth = 1.55f;
-        private const float VisualThickness = 0.24f;
+        private const float VisualWidth = 1.72f;
+        private const float VisualThickness = 0.31f;
 
         private Mesh activeMesh;
         private Mesh passiveMesh;
@@ -33,7 +33,12 @@ namespace AdieLab.PineMorphLab
                 passiveRenderer);
             if (activeRenderer.sharedMaterial.HasProperty("_FiberStrength"))
             {
-                activeRenderer.sharedMaterial.SetFloat("_FiberStrength", 0.72f);
+                activeRenderer.sharedMaterial.SetFloat("_FiberStrength", 0.88f);
+            }
+            if (passiveRenderer.sharedMaterial.HasProperty("_FiberStrength"))
+            {
+                passiveRenderer.sharedMaterial.SetFloat("_FiberStrength", 0.34f);
+                passiveRenderer.sharedMaterial.SetFloat("_FiberAngle", 8f);
             }
             SetMorph(PineMorphInput.Baseline, PineMorphPhysics.Evaluate(PineMorphInput.Baseline), 0f);
         }

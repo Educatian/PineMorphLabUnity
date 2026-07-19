@@ -71,8 +71,10 @@ Shader "PineMorph/Lit"
                 half2 materialPosition = input.uv * half2(1.55h, 4.6h);
                 half fiberCoordinate = materialPosition.x * cos(angle)
                     + materialPosition.y * sin(angle);
-                half fiberBand = smoothstep(0.82h, 0.98h, abs(sin(fiberCoordinate * 48.0h)));
-                half3 surfaceColor = _Color.rgb * lerp(1.0h, 1.22h, fiberBand * _FiberStrength);
+                half fiberBand = smoothstep(0.72h, 0.98h, abs(sin(fiberCoordinate * 76.0h)));
+                half cellNoise = sin(input.worldPosition.x * 41.0h + sin(input.worldPosition.z * 29.0h));
+                half porousDetail = 0.94h + 0.06h * cellNoise;
+                half3 surfaceColor = _Color.rgb * porousDetail * lerp(0.92h, 1.28h, fiberBand * _FiberStrength);
                 half3 color = surfaceColor * baseLighting + specularColor * specular * _Glossiness;
                 return fixed4(color, _Color.a);
             }
