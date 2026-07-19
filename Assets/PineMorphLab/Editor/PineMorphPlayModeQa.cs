@@ -73,6 +73,7 @@ namespace AdieLab.PineMorphLab.Editor
                 {
                     ValidateInitial();
                     ValidateHandsOnTutorial();
+                    ValidateLayerInspection();
                     Find<Button>("UNDER-OPENS").onClick.Invoke();
                     Find<Button>("RUN TEST").onClick.Invoke();
                     phase = 1;
@@ -157,6 +158,35 @@ namespace AdieLab.PineMorphLab.Editor
             Require(app.TutorialVisible, "Fiber practice should advance after manipulation.");
             next.onClick.Invoke();
             Require(!app.TutorialVisible, "Start Lab should close guided learning.");
+            Require(Mathf.Approximately(Find<Slider>("Active Layer Fraction").value, 0.55f),
+                "Starting the lab must restore the baseline active-layer fraction.");
+            Require(Mathf.Approximately(Find<Slider>("Stiffness Ratio Ea/Ep").value, 1f),
+                "Starting the lab must restore the baseline stiffness ratio.");
+            Require(Mathf.Approximately(Find<Slider>("Fiber Angle").value, 0f),
+                "Starting the lab must restore the baseline fiber angle.");
+        }
+
+        private static void ValidateLayerInspection()
+        {
+            PineMorphApp app = UnityEngine.Object.FindAnyObjectByType<PineMorphApp>();
+            var selector = typeof(PineMorphApp).GetMethod("SelectObjectFromRay");
+            var selectedLabel = typeof(PineMorphApp).GetProperty("SelectedObjectLabel");
+            Require(selector != null && selectedLabel != null,
+                "The app must expose ray selection so bonded layers can be cycled.");
+
+            Renderer active = GameObject.Find("Active Layer").GetComponent<Renderer>();
+            Ray ray = new Ray(Camera.main.transform.position,
+                (active.bounds.center - Camera.main.transform.position).normalized);
+            Require((bool)selector.Invoke(app, new object[] { ray }),
+                "The active layer should be selectable from the viewport.");
+            string first = (string)selectedLabel.GetValue(app);
+            Require((bool)selector.Invoke(app, new object[] { ray }),
+                "A repeated click should select the bonded layer beneath.");
+            string second = (string)selectedLabel.GetValue(app);
+            Require(first != second
+                && ((first.Contains("ACTIVE") && second.Contains("PASSIVE"))
+                    || (first.Contains("PASSIVE") && second.Contains("ACTIVE"))),
+                "Repeated clicks through the bilayer must expose both active and passive layers.");
         }
 
         private static void ValidateResult()

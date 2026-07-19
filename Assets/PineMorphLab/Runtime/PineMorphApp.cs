@@ -90,6 +90,7 @@ namespace AdieLab.PineMorphLab
         private bool running;
         private bool applyingPreset;
         private bool compactLayout;
+        private bool initialGuidanceActive = true;
         private int guidedPractice = -1;
         private bool cameraRotated;
         private bool cameraZoomed;
@@ -99,6 +100,7 @@ namespace AdieLab.PineMorphLab
         public int CurrentTrial => trialIndex;
         public int CompletedTrialCount => testedResults.Count;
         public bool TutorialVisible => tutorialOverlay != null && tutorialOverlay.activeSelf;
+        public string SelectedObjectLabel => selectedInspectable?.Label ?? string.Empty;
 
         private static readonly string[] PredictionLabels =
         {
@@ -917,6 +919,11 @@ namespace AdieLab.PineMorphLab
             guidedPractice = -1;
             SetTutorialFocus(-1);
             tutorialOverlay.SetActive(false);
+            if (initialGuidanceActive)
+            {
+                ApplyTrialPreset(0);
+                initialGuidanceActive = false;
+            }
             RecordEvent("tutorial_closed", (tutorialIndex + 1).ToString(CultureInfo.InvariantCulture));
         }
 
@@ -988,6 +995,46 @@ namespace AdieLab.PineMorphLab
             CheckViewportPractice();
         }
 
+        public bool SelectObjectFromRay(Ray ray)
+        {
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f);
+            if (hits.Length == 0)
+            {
+                return false;
+            }
+
+            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+            PineMorphInspectable first = null;
+            PineMorphInspectable alternate = null;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                PineMorphInspectable inspectable =
+                    hits[i].collider.GetComponentInParent<PineMorphInspectable>();
+                if (inspectable == null)
+                {
+                    continue;
+                }
+
+                if (first == null)
+                {
+                    first = inspectable;
+                }
+                else if (inspectable != first)
+                {
+                    alternate = inspectable;
+                    break;
+                }
+            }
+
+            if (first == null)
+            {
+                return false;
+            }
+
+            NotifyObjectSelected(selectedInspectable == first && alternate != null ? alternate : first);
+            return true;
+        }
+
         private void CheckViewportPractice()
         {
             if (guidedPractice != 0)
@@ -1023,11 +1070,7 @@ namespace AdieLab.PineMorphLab
                 return;
             }
 
-            Ray ray = camera.ScreenPointToRay(pointer);
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f))
-            {
-                NotifyObjectSelected(hit.collider.GetComponentInParent<PineMorphInspectable>());
-            }
+            SelectObjectFromRay(camera.ScreenPointToRay(pointer));
         }
 
         private Slider CreateSlider(RectTransform parent, string label, float x, float y, float width,
