@@ -84,40 +84,66 @@ def build_clamp(mats):
 
 
 def scale_mesh(name: str, target, mat):
-    vertices = [
-        (-0.25, -0.34, -0.06), (0.25, -0.34, -0.06), (0.34, 0.05, -0.03),
-        (0.18, 0.52, 0.0), (0.0, 0.68, 0.03), (-0.18, 0.52, 0.0), (-0.34, 0.05, -0.03),
-        (-0.20, -0.28, 0.08), (0.20, -0.28, 0.08), (0.0, 0.58, 0.12),
-    ]
-    faces = [
-        (0, 1, 2, 3, 4, 5, 6), (7, 9, 8), (0, 7, 8, 1), (1, 8, 9, 2),
-        (2, 9, 3), (3, 9, 4), (4, 9, 5), (5, 9, 7, 6), (6, 7, 0),
-    ]
+    longitudinal = 7
+    transverse = 5
+    vertices = []
+    faces = []
+    for row in range(longitudinal):
+        u = row / (longitudinal - 1)
+        y = -0.34 + u * 1.08
+        half_width = 0.29 * (1.0 - u ** 1.55) + 0.025
+        crown = 0.055 * math.sin(u * math.pi) + 0.16 * u * u
+        for col in range(transverse):
+            v = -1.0 + 2.0 * col / (transverse - 1)
+            x = half_width * v
+            edge_curl = 0.035 * v * v * (0.4 + u)
+            vertices.append((x, y, crown + edge_curl))
+    for row in range(longitudinal - 1):
+        for col in range(transverse - 1):
+            a = row * transverse + col
+            b = a + 1
+            c = a + transverse + 1
+            d = a + transverse
+            faces.append((a, b, c, d))
     mesh = bpy.data.meshes.new(f"{name}Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
     target.objects.link(obj)
     obj.data.materials.append(mat)
-    bevel = obj.modifiers.new("Woody edge", "BEVEL")
-    bevel.width = 0.035
+    solidify = obj.modifiers.new("Scale thickness", "SOLIDIFY")
+    solidify.thickness = 0.045
+    solidify.offset = -0.35
+    bevel = obj.modifiers.new("Weathered scale edge", "BEVEL")
+    bevel.width = 0.018
     bevel.segments = 2
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.shade_smooth()
+    obj.select_set(False)
     return obj
 
 
 def build_pine_cone(mats):
     target = collection("PineConeReference")
-    cylinder("ConeCore", target, (0.0, 0.0, 0.90), 0.42, 1.80, mats["wood_dark"])
-    for row in range(9):
-        count = 7 + row
-        radius = 0.30 + math.sin((row + 1.0) / 10.0 * math.pi) * 0.48
-        z = 0.16 + row * 0.20
+    cylinder("ConeCore", target, (0.0, 0.0, 0.92), 0.34, 1.82, mats["wood_dark"])
+    rows = 12
+    for row in range(rows):
+        height_ratio = row / (rows - 1)
+        count = 9 + row
+        radius = 0.25 + math.sin((row + 1.0) / (rows + 1.0) * math.pi) * 0.49
+        z = 0.12 + row * 0.15
+        scale_size = 0.70 + 0.15 * math.sin(height_ratio * math.pi)
+        material_key = ("wood_light" if (row + 1) % 3 == 0
+                        else "wood_mid" if row % 3 == 0
+                        else "wood")
         for index in range(count):
-            angle = (index + row * 0.45) * math.tau / count
-            item = scale_mesh(f"Scale_{row}_{index}", target, mats["wood"])
+            angle = (index + row * 0.48) * math.tau / count
+            item = scale_mesh(f"Scale_{row}_{index}", target, mats[material_key])
             item.location = (math.cos(angle) * radius, math.sin(angle) * radius, z)
-            item.rotation_euler = (0.42 - row * 0.018, 0.0, angle - math.pi * 0.5)
-            item.scale = (0.78, 0.82, 0.78)
+            flare = 0.54 - height_ratio * 0.22
+            item.rotation_euler = (flare, 0.0, angle - math.pi * 0.5)
+            item.scale = (scale_size, scale_size * 0.90, scale_size)
     return target
 
 

@@ -104,7 +104,7 @@ Use `Tools > PineMorph Lab > Build Windows` or `Tools > PineMorph Lab > Build We
 
 ## Blender asset pipeline
 
-PineMorph now includes an editable Blender source pack and runtime FBX set for the humidity stage, precision clamps, overlapping pine-cone scales, bilayer coupon, and tissue cross-section. The live `PineMorphRibbon` still deforms from analytical model output; the imported assets provide laboratory context and biological detail without replacing the mechanics.
+PineMorph now includes an editable Blender source pack and runtime FBX set for the humidity stage, precision clamps, tapered curved pine-cone scales with dense overlap and natural material variation, bilayer coupon, and tissue cross-section. The live `PineMorphRibbon` still deforms from analytical model output; the imported assets provide laboratory context and biological detail without replacing the mechanics.
 
 | Asset group | Runtime role |
 | --- | --- |

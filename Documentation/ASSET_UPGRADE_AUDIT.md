@@ -11,7 +11,7 @@ Raise PineMorph to the same immersive asset standard as GeckoGrip while keeping 
 | Flat ribbon without bonded-layer context | `BilayerCoupon.fbx` and HUD render with active, passive, bond, and fiber layers | Makes thickness fraction and fiber orientation visually interpretable |
 | Cylinder platform | `HumidityStage.fbx` with machined plinth, specimen window, sensor, vapor manifold, guard, and fasteners | Connects humidity input to a plausible laboratory apparatus |
 | Cube clamps | `PrecisionClamp.fbx` with jaw, soft insert, screw, and knob | Shows boundary conditions and load transfer |
-| Sphere pile pine cone | `PineConeReference.fbx` with custom overlapping directed scales | Provides a recognizable biological reference with readable scale orientation |
+| Sphere pile pine cone | `PineConeReference.fbx` with tapered curved scales, raised tips, physical thickness, dense overlap, and natural material variation | Provides a recognizable biological reference with readable scale orientation and depth |
 | No tissue-scale specimen | `ScaleCrossSection.fbx` with active/passive tissues, cellulose bundles, and pores | Connects anisotropy and moisture transport to the biological structure |
 | Text-only design controls | Five transparent HUD renders in `Resources/Hud` | Connects the three sliders to physical geometry and test hardware |
 
