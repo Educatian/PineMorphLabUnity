@@ -31,8 +31,9 @@ During five Predict-Observe-Explain trials, learners:
 5. follow a synchronized mechanics trace from humidity to design constraints;
 6. compare opening angle, response time, and peak stress across trials;
 7. revise an unsafe final design until all three constraints are met;
-8. complete a Claim-Evidence-Reasoning check; and
-9. export anonymous trial data as CSV.
+8. complete a Claim-Evidence-Reasoning check;
+9. solve a short transfer task using an unseen seed-pod design condition; and
+10. export anonymous trial data as CSV.
 
 ## Instructional constraints
 
@@ -72,10 +73,16 @@ The graph is a normalized constraint map. Teal, amber, and coral encode opening 
 
 All sliders remain adjustable during every trial. Changing a design after selecting a prediction clears that prediction so the tested design and recorded prediction cannot become mismatched.
 
+## Competency and learning evidence
+
+The session score combines normalized prediction accuracy (20 points), Trial 5 optimization and revision (25), Claim-Evidence-Reasoning (45), and an unseen seed-pod transfer task (10). Prediction accuracy uses correct predictions divided by completed prediction opportunities, so partial sessions are not penalized for opportunities that were never reached.
+
+Five raw trial opportunities are retained for the learning sequence. Cross-app comparison uses normalized opportunity progress instead of comparing PineMorph's five trials directly with GeckoGrip's four. Anonymous JSONL events are mirrored to WebGL as pinemorph-learning-event browser events and postMessage payloads. See [the common learning-event schema](Documentation/LEARNING_EVENT_SCHEMA.md).
+
 ## Validation
 
 - Unity `6000.4.9f1`
-- `10/10` EditMode analytical physics tests
+- `13/13` EditMode analytical physics and competency tests
 - automated PlayMode verification of required rotate, zoom, object-selection, and slider practice
 - automated prediction, run, result, and navigation QA
 - PlayMode verification that rerunning a trial replaces, rather than duplicates, its record
@@ -101,6 +108,7 @@ Use `Tools > PineMorph Lab > Build Windows` or `Tools > PineMorph Lab > Build We
 - [Evidence-centered design](GAME_CONCEPT.md)
 - [Learning guide](LEARNING_GUIDE.md)
 - [Design system](DESIGN.md)
+- [Common learning-event schema](Documentation/LEARNING_EVENT_SCHEMA.md)
 
 ## Blender asset pipeline
 

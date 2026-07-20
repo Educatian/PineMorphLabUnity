@@ -86,7 +86,12 @@ namespace AdieLab.PineMorphLab
         private int trialIndex;
         private int predictionIndex = -1;
         private int tutorialIndex;
-        private int assessmentPoints;
+        private readonly List<bool> predictionMatches = new List<bool>();
+        private int correctPredictions;
+        private int finalRevisionAttempts;
+        private int assessmentSelections;
+        private int correctCerSelections;
+        private bool transferCorrect;
         private bool running;
         private bool applyingPreset;
         private bool compactLayout;
@@ -485,21 +490,23 @@ namespace AdieLab.PineMorphLab
                 30f, 24f, 880f, 44f, TextAnchor.MiddleLeft);
             CreateText(panel, "Select the strongest response in each row.", 15, FontStyle.Normal,
                 new Color(0.73f, 0.85f, 0.83f), 30f, 70f, 880f, 30f, TextAnchor.MiddleLeft);
-            CreateAssessmentRow(panel, 120f, "CLAIM",
-                new[] { "Maximize angle", "Balance all three limits", "Use the thickest layer" }, 1);
-            CreateAssessmentRow(panel, 270f, "EVIDENCE",
-                new[] { "Appearance only", "Angle only", "Angle + time + stress with units" }, 2);
-            CreateAssessmentRow(panel, 420f, "REASONING",
-                new[] { "Thickness is always better", "Mismatch creates curvature while diffusion and stress constrain it", "Humidity adds motor force" }, 1);
-            assessmentScore = CreateText(panel, "Complete all three selections.", 18, FontStyle.Bold,
-                new Color(0.55f, 0.86f, 0.80f), 30f, 580f, 620f, 52f, TextAnchor.MiddleLeft);
+            CreateAssessmentRow(panel, 105f, "CLAIM",
+                new[] { "Maximize angle", "Balance all three limits", "Use the thickest layer" }, 1, false);
+            CreateAssessmentRow(panel, 220f, "EVIDENCE",
+                new[] { "Appearance only", "Angle only", "Angle + time + stress with units" }, 2, false);
+            CreateAssessmentRow(panel, 335f, "REASONING",
+                new[] { "Thickness is always better", "Mismatch creates curvature while diffusion and stress constrain it", "Humidity adds motor force" }, 1, false);
+            CreateAssessmentRow(panel, 450f, "TRANSFER",
+                new[] { "Maximize motion", "Copy the pine-cone thickness", "Balance motion + time + stress" }, 2, true);
+            assessmentScore = CreateText(panel, "Complete CER and the unseen seed-pod transfer task.", 18, FontStyle.Bold,
+                new Color(0.55f, 0.86f, 0.80f), 30f, 570f, 640f, 72f, TextAnchor.MiddleLeft);
             Button close = CreateButton(panel, "RETURN TO LAB", Teal, 690f, 578f, 220f, 52f, 14);
             close.onClick.AddListener(() => assessmentPanel.SetActive(false));
             assessmentPanel.SetActive(false);
         }
 
         private void CreateAssessmentRow(RectTransform parent, float y, string label,
-            string[] options, int correctIndex)
+            string[] options, int correctIndex, bool transferTask)
         {
             CreateText(parent, label, 14, FontStyle.Bold, new Color(0.55f, 0.86f, 0.80f),
                 30f, y, 130f, 34f, TextAnchor.MiddleLeft);
@@ -507,16 +514,16 @@ namespace AdieLab.PineMorphLab
             {
                 int captured = i;
                 Button option = CreateButton(parent, options[i], Muted, 150f + i * 250f, y,
-                    235f, 92f, 13);
+                    235f, 82f, 13);
                 option.GetComponentInChildren<Text>().resizeTextForBestFit = true;
                 option.onClick.AddListener(() =>
                 {
-                    SelectAssessmentOption(option, captured == correctIndex);
+                    SelectAssessmentOption(option, captured == correctIndex, transferTask);
                 });
             }
         }
 
-        private void SelectAssessmentOption(Button selected, bool correct)
+        private void SelectAssessmentOption(Button selected, bool correct, bool transferTask)
         {
             Transform row = selected.transform.parent;
             float y = selected.GetComponent<RectTransform>().anchoredPosition.y;
@@ -529,17 +536,40 @@ namespace AdieLab.PineMorphLab
                 }
             }
 
-            if (correct)
+            assessmentSelections++;
+            if (transferTask)
             {
-                assessmentPoints += 20;
-                selected.image.color = Teal;
+                transferCorrect = correct;
+                PineMorphTelemetry.RecordAction(
+                    "transfer_task_completed", trialIndex + 1, correct ? "correct" : "incorrect");
+            }
+            else if (correct)
+            {
+                correctCerSelections++;
+            }
+
+            selected.image.color = correct ? Teal : Coral;
+            if (assessmentSelections < 4)
+            {
+                assessmentScore.text = $"EVIDENCE CHECK  {assessmentSelections}/4 RESPONSES";
             }
             else
             {
-                selected.image.color = Coral;
+                PineMorphCompetencyInput input = new PineMorphCompetencyInput(
+                    correctPredictions,
+                    testedResults.Count,
+                    testedResults.Count == 5 && testedResults[4].PassesAllConstraints,
+                    finalRevisionAttempts,
+                    correctCerSelections,
+                    transferCorrect);
+                PineMorphCompetencyResult result = PineMorphCompetencyAssessment.Evaluate(input);
+                assessmentScore.text =
+                    $"{result.Level}  {result.TotalScore}/100\n"
+                    + $"Prediction {result.PredictionScore}/20 | Trial 5 {result.OptimizationScore}/25 | "
+                    + $"CER {result.CerScore}/45 | Transfer {result.TransferScore}/10";
+                PineMorphTelemetry.RecordAssessment(result);
             }
 
-            assessmentScore.text = $"EVIDENCE CHECK  {assessmentPoints}/60";
             RecordEvent("assessment_selected", correct ? "correct" : "incorrect");
         }
 
@@ -598,6 +628,16 @@ namespace AdieLab.PineMorphLab
             UpdatePredictionButtons();
             PineMorphInput input = CurrentInput();
             ribbon.SetMorph(input, PineMorphPhysics.Evaluate(input), 0f);
+            string inputName = changedControl == 0 ? "active_layer_fraction"
+                : changedControl == 1 ? "stiffness_ratio" : "fiber_angle_deg";
+            float inputValue = changedControl == 0 ? input.ActiveLayerFraction
+                : changedControl == 1 ? input.StiffnessRatio : input.FiberAngleDeg;
+            PineMorphTelemetry.RecordInputChange(
+                trialIndex + 1,
+                inputName,
+                inputValue,
+                $"activeLayerFraction={input.ActiveLayerFraction:0.000};stiffnessRatio={input.StiffnessRatio:0.000};fiberAngleDeg={input.FiberAngleDeg:0.0}",
+                trialIndex == 4 ? finalRevisionAttempts + 1 : 0);
             ClearMetrics();
             continueButton.gameObject.SetActive(false);
             stageText.text = trialIndex == 4
@@ -651,7 +691,7 @@ namespace AdieLab.PineMorphLab
             predictionIndex = index;
             UpdatePredictionButtons();
             stageText.text = $"PREDICTION COMMITTED | {PredictionLabels[index]}. Run the humidity step.";
-            RecordEvent("prediction_selected", PredictionLabels[index]);
+            PineMorphTelemetry.RecordPrediction(trialIndex + 1, PredictionLabels[index], 0);
         }
 
         private void UpdatePredictionButtons()
@@ -728,7 +768,8 @@ namespace AdieLab.PineMorphLab
 
         private void CompleteTrial(PineMorphInput input, PineMorphResult result)
         {
-            if (testedResults.Count > trialIndex)
+            bool revisingCurrentTrial = testedResults.Count > trialIndex;
+            if (revisingCurrentTrial)
             {
                 testedInputs[trialIndex] = input;
                 testedResults[trialIndex] = result;
@@ -751,6 +792,23 @@ namespace AdieLab.PineMorphLab
             stressValue.text = $"{result.PeakStressMPa:0.00} MPa\n<size={statusSize}>{(result.StressSafe ? "BELOW LIMIT" : "OVER LIMIT")}</size>";
             string outcome = OutcomeLabel(result);
             bool predictionCorrect = PredictionLabels[predictionIndex] == outcome;
+            if (predictionMatches.Count > trialIndex)
+            {
+                predictionMatches[trialIndex] = predictionCorrect;
+            }
+            else
+            {
+                predictionMatches.Add(predictionCorrect);
+            }
+            correctPredictions = 0;
+            for (int index = 0; index < predictionMatches.Count; index++)
+            {
+                if (predictionMatches[index]) correctPredictions++;
+            }
+            if (trialIndex == 4 && revisingCurrentTrial)
+            {
+                finalRevisionAttempts++;
+            }
             resultTitle.text = result.PassesAllConstraints ? "VIABLE PASSIVE ACTUATOR" : outcome;
             resultTitle.color = result.PassesAllConstraints ? new Color(0.35f, 0.90f, 0.64f) : CoralBright;
             resultBody.text = $"Prediction {(predictionCorrect ? "matched" : "did not match")} the result. "
@@ -774,7 +832,18 @@ namespace AdieLab.PineMorphLab
                 stageText.text = "REVISE | Trial 5 must satisfy angle, response, and stress together. Change the design and retry.";
             }
 
-            RecordEvent("trial_completed", outcome);
+            PineMorphTelemetry.RecordTrial(
+                trialIndex + 1,
+                testedResults.Count,
+                input,
+                result,
+                PredictionLabels[predictionIndex],
+                outcome,
+                trialIndex == 4 ? finalRevisionAttempts : 0);
+            if (trialIndex == 4 && result.PassesAllConstraints)
+            {
+                PineMorphTelemetry.RecordFinalDesign(input, result, finalRevisionAttempts);
+            }
         }
 
         private void ContinueLearning()
@@ -862,19 +931,10 @@ namespace AdieLab.PineMorphLab
 
         private void RecordEvent(string eventName, string detail)
         {
-            string json = $"{{\"eventName\":\"{eventName}\",\"timestampUtc\":\"{DateTime.UtcNow:O}\",\"trial\":{trialIndex + 1},\"detail\":\"{detail}\",\"modelVersion\":\"{PineMorphPhysics.ModelVersion}\"}}";
-#if UNITY_WEBGL && !UNITY_EDITOR
-            PineMorphEmitEvent(json);
-#else
-            try
-            {
-                File.AppendAllText(Path.Combine(Application.persistentDataPath, "pinemorph_evidence.jsonl"),
-                    json + Environment.NewLine);
-            }
-            catch (IOException)
-            {
-            }
-#endif
+            int opportunityIndex = eventName == "session_started" || eventName.StartsWith("tutorial_", StringComparison.Ordinal)
+                ? 0
+                : trialIndex + 1;
+            PineMorphTelemetry.RecordAction(eventName, opportunityIndex, detail);
         }
 
         private static string OutcomeLabel(PineMorphResult result)
